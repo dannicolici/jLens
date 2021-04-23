@@ -1,6 +1,7 @@
 **jLens**
 
 A library that provides a way to decouple data structure properties, by exposing them as first class citizens.
+Built on top of https://github.com/cseiler/simple-optics from @cseiler
 
 Example:
 
