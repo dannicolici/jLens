@@ -8,6 +8,7 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -41,6 +42,20 @@ public class PropertyOperationsQuickCheckTest {
         ops.transform(strProp, String::toUpperCase);
         ops.transform(intProp, i -> i + 1);
         ops.applyConcurrently(container);
+
+        assertEquals(string.toUpperCase(), strProp.get(container).get());
+        assertEquals(n + 1, intProp.get(container).get().intValue());
+    }
+
+    @Property(trials = 500)
+    public void commutativeConcurrentTransformationsAreSafeForDifferentPropertiesUsingCustomExecutor(int n, String string) {
+        PropertyOperations<Container> ops = new PropertyOperations<>();
+
+        ops.set(strProp, string);
+        ops.set(intProp, n);
+        ops.transform(strProp, String::toUpperCase);
+        ops.transform(intProp, i -> i + 1);
+        ops.applyConcurrently(container, Executors.newFixedThreadPool(5), 100_000);
 
         assertEquals(string.toUpperCase(), strProp.get(container).get());
         assertEquals(n + 1, intProp.get(container).get().intValue());

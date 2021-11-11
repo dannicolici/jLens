@@ -3,6 +3,11 @@ package ro.bitgloss;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
@@ -97,6 +102,24 @@ public class PropertyOperations<A> {
     }
 
     /**
+     * Applies sequentially the predefined values and in parallel the transformations
+     * on the provided object.
+     * @param whole
+     * @param executor Custom thread pool
+     */
+    public A applyConcurrently(A whole, ExecutorService executor, long timeoutMicros) {
+        setList.forEach(doExecute(whole));
+        Future f = executor.submit(() -> opsList.parallelStream().forEach(doExecute(whole)));
+        try {
+            f.get(timeoutMicros, TimeUnit.MICROSECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            e.printStackTrace();
+        }
+
+        return whole;
+    }
+
+    /**
      * Same as {@link #applyConcurrently(Object)} with the addition of running the hook for
      * each individual value and single transformation application.
      * @param whole
@@ -104,6 +127,24 @@ public class PropertyOperations<A> {
     public A applyWithHookConcurrently(A whole, Consumer<A> hook) {
         setList.forEach(doExecuteWithHook(whole, hook));
         opsList.parallelStream().forEach(doExecuteWithHook(whole, hook));
+
+        return whole;
+    }
+
+    /**
+     * Same as {@link #applyConcurrently(Object)} with the addition of running the hook for
+     * each individual value and single transformation application.
+     * @param whole
+     * @param executor Custom thread pool
+     */
+    public A applyWithHookConcurrently(A whole, Consumer<A> hook, ExecutorService executor, long timeoutMicros) {
+        setList.forEach(doExecuteWithHook(whole, hook));
+        Future f = executor.submit(() -> opsList.parallelStream().forEach(doExecuteWithHook(whole, hook)));
+        try {
+            f.get(timeoutMicros, TimeUnit.MICROSECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            e.printStackTrace();
+        }
 
         return whole;
     }
